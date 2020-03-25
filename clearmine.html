@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+	<!--
+    	作者：driftage
+    	时间：2019-11-07
+    	描述：原生js(不原了原个锤子)扫雷
+    -->
+	<head>
+		<meta charset="UTF-8">
+		<title>扫雷</title>		
+	</head>
+	<body>
+		<div class="start">
+			<div class="title">网页扫雷</div>
+			<button class="startbtn">开始游戏</button>
+			<div class="gamelevel">
+				<button class="levelbtn">level1</button>
+				<button class="levelbtn">level2</button>
+				<button class="levelbtn">level3</button>
+			</div>
+		</div>
+		
+		<div id="mineblock" class="mineblock">
+			<!--<button class="minebtn"></button><button class="minebtn"></button><button class="minebtn"></button><br />
+			<button class="minebtn"></button><button class="minebtn"></button><button class="minebtn"></button><br />
+			<button class="minebtn"></button><button class="minebtn"></button><button class="minebtn"></button><br />			-->
+		</div>
+		
+		<div class="re">
+			<button class="restart" onclick="restart()">重新开始</button>
+		</div>
+		
+		<script src="js/jquery.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/layer/layer.js" type="text/javascript" charset="utf-8"></script>
+		<script type="text/javascript">
+			
+			//插件写快
+			function showimg(){
+				var img = '<img src="ym.jpg"/>';
+				
+				layer.open({
+					type: 1,
+					shift: 3,
+					title:'滑稽',
+					shadeClose: true,
+					area:['278px', '350px'],
+//					offset: ['100px', '41%'],
+					content:img
+				});
+			}
+
+			
+			window.onload = function() {
+				var start = document.getElementsByClassName("start")[0];
+				var sbtn = document.getElementsByClassName("startbtn")[0];
+				var gle = document.getElementsByClassName("gamelevel")[0];
+				var lebtn = document.getElementsByClassName("levelbtn");
+				sbtn.onclick = function() {
+					sbtn.style = 'display:none';
+					gle.style = 'display:block';
+				}
+				
+				lebtn[0].onclick = function() {
+					start.style = 'display:none';
+					changeLevel(1);
+				}
+				
+				lebtn[1].onclick = function() {
+					start.style = 'display:none';
+					changeLevel(2);
+				}
+				
+				lebtn[2].onclick = function() {
+					start.style = 'display:none';
+					changeLevel(3);
+				}
+				
+			}
+		
+			
+			var  mineNum = 0;//生成的雷数
+			var flag = 0; //插旗数
+			var rc = 0;//雷区行列
+			var arr = [];//随机布雷数组
+			var arr1 = [];//arr1为了不重复递归设置的参照
+			
+			//显示雷区
+			function changeLevel(num) {
+				if(num == 1) {
+					rc = 10;
+				} else if(num == 2) {
+					rc = 15;	
+				} else {
+					rc = 20;
+				}
+				
+				var str = '';//字符串拼接显示在页面
+				var count = 0;//换行计数器
+				
+				for(i = 0; i < rc; i++) {
+					var b = [];
+					var c = [];
+					for(j = 0; j < rc; j++) {
+						b[j] = 0;//一维数组
+						c[j] = 0;//必须两个，不然arr arr1均指向一个
+					}
+					arr[i] = b;//二维数组
+					arr1[i] = c;//参照
+				}
+				
+				//生成雷区
+				for(i = 0; i < rc; i++) {
+					for(j = 0; j < rc; j++) {
+						count++;
+						str+= '<button class="minebtn" id="btn'+i+','+j+'" onclick="clearMine('+i+','+j+')" onmousedown="whichButton('+i+','+j+',event)"></button>'
+						if(count%rc == 0){
+							str += '<br/>';
+						}							
+					}				
+				}				
+				document.getElementById("mineblock").innerHTML = str;
+				
+				mineNum = rc * num; //布雷
+				for(i = 0; i < mineNum; i++) {
+					var x = Math.floor( Math.random()*100 % rc );
+					var y = Math.floor( Math.random()*100 % rc );
+					if(arr[x][y] == '*'){
+						i--;
+					}else{
+						arr[x][y] = '*';
+					}			
+				}
+				
+				console.log(arr);
+				console.log(arr1);
+				//计算雷周围数字
+				aroundNum();
+				
+			}
+			
+			function changeColor(x, y) {
+				var btn = document.getElementById("btn"+x+','+y);
+				btn.className = 'minebtn1';
+			}
+			
+			function clearMine(x, y) {
+				var btn = document.getElementById("btn"+x+','+y);
+				console.log(btn)
+				if(btn.value != '!') {
+					btn.innerHTML = arr[x][y];
+					
+					changeColor(x,y);
+					btn.disabled = true;
+					if(arr[x][y] == '*' ){
+//						alert("boom!");
+						showimg();
+						displayAll();
+//						restart();
+					}
+					else if(arr[x][y] == 0){
+						judge1(x,y);
+					}						
+				}
+			}
+			
+			function displayAll(){//结束后显示全部
+				 
+				for (var i = 0; i < rc; i++){
+					for (var j = 0; j < rc; j++){
+							var btn = document.getElementById("btn"+i+','+j);
+							btn.innerHTML = arr[i][j];
+							btn.disabled = true;
+							changeColor(i,j);
+						}
+				}
+			}
+			
+			//越界判断
+			function condition(x, y){
+				if (x < 0 || x >= rc || y < 0 || y >= rc) {
+					return false;
+				} else {
+					return true;
+				}
+			}
+			
+			function judge(x, y) {
+				if (condition(x, y) && arr[x][y] != "*") {
+					arr[x][y]++;
+				}
+				if (condition(x, y) && arr[x][y] == "*") {
+					arr1[x][y] = 1;
+				}
+			}
+			
+			function aroundNum(){
+				for (var i = 0; i < rc; i++){
+					for (var j = 0; j < rc; j++){
+						 if(arr[i][j] == '*'){
+							 judge(i+1, j+1);
+							 judge(i+1, j-1);
+							 judge(i+1, j);
+							 judge(i-1, j+1);
+							 judge(i-1, j-1);
+							 judge(i-1, j);
+							 judge(i, j+1);
+							 judge(i, j-1);
+						 }
+					}
+				}
+			}				
+			
+			function judge1(x, y) {//递归
+			var btn = document.getElementById("btn"+x+','+y);
+				if (condition(x, y) && arr1[x][y]!='#') {					
+					if (arr[x][y] == 0 && btn.value != '!') {//
+						btn.innerHTML = arr[x][y];
+						btn.disabled = true;
+						arr1[x][y] = '#';//表示arr对应的格子翻过了
+						changeColor(x,y);
+						judge1(x+1, y+1);
+						judge1(x+1, y-1);
+						judge1(x+1, y);
+						judge1(x-1, y+1);
+						judge1(x-1, y-1);
+						judge1(x-1, y);
+						judge1(x, y+1);
+						judge1(x, y-1);
+					}else if (arr[x][y] != "*" && btn.value != '!'){
+						btn.innerHTML = arr[x][y];
+						btn.disabled = true;
+						changeColor(x,y);
+					} 
+					else{
+						return false;
+					}
+				}
+				
+			}
+			
+			//右键事件
+			window.document.oncontextmenu = function(){ return false;}
+			function whichButton(x, y, event)
+			{
+			  
+				var btn = document.getElementById("btn"+x+','+y);
+
+				if (event.button == 2 && btn.value != '!' && arr1[x][y] != 2) {
+							btn.setAttribute("value", ""+'!');
+							btn.innerHTML = "!";
+							flag++;
+							if (flag == mineNum){
+								success();
+								displayAll();
+							}
+							
+				}
+				else if (event.button == 2 && btn.value == '!'){
+							btn.setAttribute("value", ""+' ');
+							btn.innerHTML = "";
+							flag--;
+							if (flag == mineNum){
+								success();
+								displayAll();
+							}
+				}
+						
+				else if (event.button == 0 && arr1[x][y]!=1){
+							arr1[x][y] = 2;//左键点过不能再次右键选中
+				}
+				
+			}			
+			
+			function success(){//扫雷完成
+				var num = 0;
+				for (var i = 0; i < rc; i++){
+					for (var j = 0; j < rc; j++){
+						var btn = document.getElementById("btn"+i+','+j);
+						if (btn.value == '!' && arr[i][j] =='*'){
+							num++;
+						}						
+					}
+
+				}
+				if(num == mineNum){
+					alert("Sucess！");
+					for (var i = 0; i < rc; i++){//禁用按钮
+						for (var j = 0; j < rc; j++){
+							var btn = document.getElementById("btn"+i+','+j);
+							btn.disabled = true;
+						}
+					}
+				}
+			}
+			
+			function restart() {
+				window.location.reload();
+			}
+			
+			
+		</script>
+		
+		<style type="text/css">
+			
+			body {
+				font-size: 0;
+				
+			}
+		
+			.start {
+				width: 100px;
+				position: relative;
+				top: 300px;
+			}
+			
+			.mineblock {
+				position: relative;
+				top: 50px;
+				text-align: center;
+			}
+			
+			.minebtn {
+				margin: 0;				
+				width: 30px;
+				height: 30px;
+				padding: 0;
+				border: 1px solid rgba(96,96,96,0.1);
+				box-shadow: 0 0 3px 5px rgba(96,96,96,0.3) inset;
+				outline: none;
+				vertical-align:middle;
+			}
+			
+			.minebtn1 {
+				margin: 0;
+				width: 30px;
+				height: 30px;
+				padding: 0;
+				border: 1px solid rgba(96,96,96,0.1);
+				background: white;
+				box-shadow: none;
+				outline: none;
+				vertical-align:middle;
+			}
+				
+			.title {
+				height: 80px;
+				width: 320px;
+				position: absolute;
+				top: -200px;
+				left: -webkit-calc(50% - 160px);
+				left:-moz-calc(50% - 160px);
+				font-size: 80px;
+			}
+			
+			.start, .gamelevel, .mineblock {
+				width: 100%;
+				text-align: center;
+				font-size: 0;
+			}
+			
+			.startbtn, .levelbtn, .restart {
+				border: 0;
+				background: aqua;
+				height: 30px;
+				width: 100px;
+				font-size: 13px;
+				text-align: center;
+				text-indent: 5px;
+				letter-spacing: 5px;
+				margin: 10px;
+			}
+			
+			.restart {
+				top: 0;
+				left: calc(50% - 60px);
+				position: absolute;
+			}
+			
+			.gamelevel {
+				display: none;
+			}
+			
+		</style>
+		
+	</body>
+</html>
